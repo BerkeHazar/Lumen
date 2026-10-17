@@ -166,10 +166,16 @@ function viewSearch() {
     </div>`;
   } else if (!q) {
     const recent = S.recent || [];
-    // Silme düğmesi açma düğmesinin İÇİNE konamaz (iç içe button geçersiz HTML),
-    // bu yüzden satır iki kardeş düğmeden oluşur.
-    body = recent.length
-      ? `<ul class="results">
+    const n = search.size ? search.size() : 0;
+    // Dizin hazır değilken rastgele seçim yapılamaz — düğme o zaman gizlenir.
+    const randomBtn = n
+      ? `<button class="textbtn" data-act="random">Rastgele bir kelime <span aria-hidden="true">→</span></button>`
+      : '';
+
+    if (recent.length) {
+      // Silme düğmesi açma düğmesinin İÇİNE konamaz (iç içe button geçersiz HTML),
+      // bu yüzden satır iki kardeş düğmeden oluşur.
+      body = `<ul class="results">
           ${recent.map((w) => `
             <li class="recent">
               <button class="result" data-open="${esc(w)}">
@@ -182,12 +188,24 @@ function viewSearch() {
                 ${icon('close', { size: 16 })}
               </button>
             </li>`).join('')}
-        </ul>`
-      : `<div class="empty">
-          ${icon('book', { size: 40 })}
-          <h3>${esc(dirLabel)} sözlük hazır</h3>
-          <p>Aramak istediğin kelimeyi yaz. Sonuçlar yazarken görünür.</p>
+        </ul>
+        ${randomBtn ? `<div class="home-more">${randomBtn}</div>` : ''}`;
+    } else {
+      /*
+       * İlk açılış.
+       *
+       * Önceden burada "İngilizce sözlük hazır" yazıyordu — bir durum bildirimi.
+       * Kullanıcıya ne bulacağını söylemiyor, boş ekranı da doldurmuyordu.
+       * Yerine sözlüğün ölçeği (madde sayısı) ve tek bir çıkış yolu kondu:
+       * rastgele kelime. Sayı, madde başlıklarıyla aynı serif ailede ve büyük —
+       * ana ekranın "kelimesi" o.
+       */
+      body = `<div class="home">
+          ${n ? `<h3 class="home-count">${n.toLocaleString('tr-TR')}</h3>
+                 <p class="home-sub">${esc(dirLabel)} madde · çevrimdışı çalışır</p>` : ''}
+          ${randomBtn ? `<div class="home-random">${randomBtn}</div>` : ''}
         </div>`;
+    }
   } else if (!S.results.length) {
     body = `<div class="empty">
       ${icon('search', { size: 34 })}
@@ -501,6 +519,31 @@ function viewSettings() {
           <div class="ctl"><div class="keys">${key('Esc')}</div></div>
         </div>
       </div>
+
+      <!--
+        Atıf burada duruyor, alt bilgide değil.
+        Önceden her ekranın altında üç satır lisans metni vardı; mobilde sürekli
+        görünüyor ve içeriği aşağı itiyordu. Lisans yalnızca "ulaşılabilir"
+        olmak zorunda — ayrı bir bölüm bunu karşılıyor. Her maddede zaten
+        "ikinci kaynaktan gelir" notu var.
+      -->
+      <div class="set-group">
+        <h2>Hakkında</h2>
+        <p class="about">
+          Sözlük verisi
+          <a href="https://en.wiktionary.org" target="_blank" rel="noopener">Wiktionary</a>'den
+          türetilmiştir,
+          <a href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noopener">CC BY-SA 4.0</a>
+          lisansı altındadır. Türkçe karşılıkların bir bölümü
+          <a href="https://github.com/freedict/fd-dictionaries" target="_blank" rel="noopener">FreeDict eng-tur</a>'den
+          gelir, GPL-2.0+ lisansı altındadır. Ses kayıtları
+          <a href="https://commons.wikimedia.org" target="_blank" rel="noopener">Wikimedia Commons</a>'tan gelir.
+        </p>
+        <p class="about about-links">
+          <a href="https://github.com/BerkeHazar/Lumen" target="_blank" rel="noopener">Kaynak kodu</a>
+          · MIT lisansı
+        </p>
+      </div>
     </div>`;
 }
 
@@ -534,14 +577,7 @@ function viewShell() {
       <button class="ibtn" data-act="theme" aria-label="Temayı değiştir">${icon('contrast', { size: 19 })}</button>
     </header>
     <main class="main" id="view"></main>
-    <div id="toast"></div>
-    <footer class="foot">
-      Sözlük verisi Wiktionary'den türetilmiştir, <a href="https://creativecommons.org/licenses/by-sa/4.0/"
-      target="_blank" rel="noopener">CC BY-SA 4.0</a> lisansı altındadır.
-      Türkçe karşılıkların bir bölümü <a href="https://github.com/freedict/fd-dictionaries"
-      target="_blank" rel="noopener">FreeDict eng-tur</a>'den gelir, GPL-2.0+ lisansı altındadır.
-      Ses kayıtları Wikimedia Commons'tan gelir.
-    </footer>`;
+    <div id="toast"></div>`;
 }
 
 /* ------------------------------------------------------------------ çizim */
@@ -851,6 +887,29 @@ async function setTheme(v) {
   render();
 }
 
+/*
+ * Dizini arka planda hazırlar.
+ *
+ * Ana ekrandaki madde sayısı dizin hazır olmadan bilinmiyor; ilk çizim her
+ * zaman dizinden önce olduğu için sayı "0" çıkıp gizleniyordu. Dizin kurulunca
+ * ekran bir kez tazelenir — ama yalnızca kullanıcı hâlâ boş aramada duruyorsa.
+ *
+ * `indexToken`: yön hızlıca iki kez değişirse eski kurulumun yenisini ezmesini
+ * engeller.
+ */
+let indexToken = 0;
+
+function warmIndex() {
+  const token = ++indexToken;
+  dict.loadIndex(S.direction)
+    .then((rows) => {
+      if (token !== indexToken) return;
+      search.build(rows);
+      if (S.route.name === 'search' && !S.query) render();
+    })
+    .catch(() => { /* ilk aramada tekrar denenir */ });
+}
+
 async function setDirection(v) {
   S.direction = await store.setSetting('direction', v);
   search.reset?.();
@@ -861,6 +920,7 @@ async function setDirection(v) {
   renderShell();
   if (S.route.name === 'entry') go('#/');
   else render();
+  warmIndex();
 }
 
 /* ------------------------------------------------------------------ olaylar */
@@ -922,6 +982,13 @@ async function onClick(ev) {
       S.results = [];
       render();
       document.getElementById('q')?.focus();
+      break;
+    }
+
+    /* Boş ana ekrandan rastgele madde açar. */
+    case 'random': {
+      const w = search.random ? search.random() : null;
+      if (w) go(`#/w/${encodeURIComponent(w)}`);
       break;
     }
 
@@ -1102,9 +1169,7 @@ async function boot() {
   window.addEventListener('hashchange', () => { route(); });
 
   // Dizin arka planda hazırlansın — ilk aramada bekleme olmasın
-  dict.loadIndex(S.direction)
-    .then((rows) => search.build(rows))
-    .catch(() => { /* ilk aramada tekrar denenir */ });
+  warmIndex();
 
   await route();
 }

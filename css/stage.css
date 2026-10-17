@@ -514,6 +514,40 @@ svg { display: block; }
 }
 .empty p { font-size: 14px; color: var(--fg-4); max-width: 34ch; margin: 0 auto; }
 
+/*
+ * Ana ekran — ilk açılış (geçmiş boşken).
+ *
+ * Önceden burada "İngilizce sözlük hazır" yazan bir durum bildirimi vardı;
+ * ekranın üst yarısı boş kalıyordu. Şimdi sözlüğün ölçeği madde başlıklarıyla
+ * aynı serif ailede büyük bir sayı olarak duruyor — ana ekranın "kelimesi" o —
+ * altında tek bir çıkış yolu var.
+ */
+.home { padding: 88px 0 0; }
+
+.home-count {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: clamp(52px, 17vw, 76px);
+  line-height: .95;
+  letter-spacing: -.025em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-sub {
+  margin-top: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--fg-4);
+}
+
+.home-random { margin-top: 36px; }
+/* Ekranın tek eylemi — 13.5 px fazla silik kalıyordu */
+.home-random .textbtn { font-size: 15px; }
+
+/* geçmiş listesinin altındaki rastgele kelime bağlantısı */
+.home-more { padding: 22px 0 0; }
+
 /* bulunamayan kelimede dış sözlük bağlantıları */
 .outside {
   display: flex;
@@ -643,16 +677,20 @@ kbd {
 /* kısayol satırında tuşlar sağda gruplanır */
 .keys { display: flex; align-items: center; gap: 6px; }
 
-/* --------------------------------------------------------------- alt bilgi */
-.foot {
-  padding: 26px 0 34px;
-  border-top: 1px solid var(--bd);
-  font-size: 12px;
+/* --------------------------------------------------------------- hakkında */
+/*
+ * Lisans metni artık ayarlarda. Alt bilgide her ekranda duruyordu; mobilde
+ * sürekli görünüp içeriği aşağı itiyordu.
+ */
+.about {
+  font-size: 13px;
   line-height: 1.7;
   color: var(--fg-4);
+  max-width: 54ch;
 }
-.foot a { border-bottom: 1px solid var(--bd-2); }
-.foot a:hover { color: var(--fg-3); }
+.about a { border-bottom: 1px solid var(--bd-2); }
+.about a:hover { color: var(--fg-3); }
+.about-links { margin-top: 10px; }
 
 /* ------------------------------------------------------------------- erişim */
 @media (prefers-reduced-motion: reduce) {

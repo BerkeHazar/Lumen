@@ -23,7 +23,7 @@
  * Kabuk dosyaları (html/css/js) değiştiğinde bu numara artırılmalı — aksi
  * hâlde kullanıcı bir tur eski arayüzü görür.
  */
-const VERSION = 'v12';
+const VERSION = 'v14';
 
 /*
  * Veri önbelleği AYRI numaralanır. Sözlük parçaları 34 MB; her kabuk

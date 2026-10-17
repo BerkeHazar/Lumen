@@ -357,7 +357,33 @@ check('320 px\'te yatay taşma yok', narrow.overflow <= 0, `${narrow.overflow}px
 check('320 px\'te ikon hedefi en az 32 px', narrow.icon >= 32, `${narrow.icon}px`);
 await page.setViewportSize({ width: 430, height: 950 });
 
-console.log('\n9. genel sağlık');
+console.log('\n9. ana ekran');
+/* Geçmişi temizle ki ilk açılış ekranı görünsün. */
+await goto('#/settings');
+await page.click('[data-act="clearrecent"]');
+await wait(700);
+await goto('#/');
+/* Önceki aramadan kalan sorgu varsa temizle — ana ekran yalnızca boşken çizilir. */
+await page.fill('#q', '');
+await wait(600);
+
+const countText = await page.locator('.home-count').textContent().catch(() => null);
+check('ana ekranda madde sayısı var', !!countText, countText || '(yok)');
+check('sayı binlik ayraçlı', /^\d{1,3}(\.\d{3})+$/.test(countText || ''), countText || '(yok)');
+check('ana ekranda rastgele düğmesi var', await page.locator('[data-act="random"]').count() === 1);
+
+await page.click('[data-act="random"]');
+await wait(1500);
+const randHash = new URL(page.url()).hash;
+check('rastgele bir madde açtı', /^#\/w\/.+/.test(randHash), randHash);
+check('rastgele maddede başlık var', await page.locator('.entry h1').count() === 1);
+
+/* Rastgele açılan kelime geçmişe düşmeli; düğme geçmiş listesinde de durmalı. */
+await goto('#/');
+check('geçmişe eklendi', await page.locator('.recent').count() >= 1);
+check('geçmiş varken de rastgele düğmesi var', await page.locator('[data-act="random"]').count() === 1);
+
+console.log('\n10. genel sağlık');
 const nested = await page.evaluate(() => document.querySelectorAll('button button').length);
 check('iç içe button yok', nested === 0, `${nested}`);
 

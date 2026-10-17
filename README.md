@@ -1,7 +1,33 @@
-# Lumen
+<p align="center">
+  <img src="icons/icon-192.png" width="72" height="72" alt="Lumen">
+</p>
 
-İki yönlü Türkçe–İngilizce sözlük. Tarayıcıda çalışır, sunucu istemez, hesap
-istemez, veri cihazdan çıkmaz.
+<h1 align="center">Lumen</h1>
+
+<p align="center">
+  İki yönlü Türkçe–İngilizce sözlük.<br>
+  Tarayıcıda çalışır, sunucu istemez, hesap istemez, veri cihazdan çıkmaz.
+</p>
+
+<p align="center">
+  <a href="https://berkehazar.github.io/Lumen/"><b>Canlı sürüm →</b></a>
+</p>
+
+<p align="center">
+  <img alt="lisans: MIT" src="https://img.shields.io/badge/license-MIT-3E9E70?style=flat-square">
+  <img alt="bağımlılık: 0" src="https://img.shields.io/badge/dependencies-0-3E9E70?style=flat-square">
+  <img alt="çevrimdışı" src="https://img.shields.io/badge/offline-first-3E9E70?style=flat-square">
+  <img alt="PWA" src="https://img.shields.io/badge/PWA-installable-3E9E70?style=flat-square">
+</p>
+
+<p align="center">
+  <img src="docs/preview.png" width="310" alt="Lumen — koyu tema">
+  <img src="docs/preview-light.png" width="310" alt="Lumen — açık tema">
+</p>
+
+<p align="center">
+  <sub>44.683 İngilizce · 34.734 Türkçe madde · 55 MB veri · sıfır bağımlılık</sub>
+</p>
 
 - **Ara → bul → oku → kapat.** Oyunlaştırma yok; streak, XP, seviye, rozet yok.
 - **Çevrimdışı.** İlk açılıştan sonra ağ olmadan da çalışır.
@@ -57,8 +83,8 @@ kopyada** oluyordu. Bu test kullanıcının durumunu birebir kurar: veri iner,
 IndexedDB'ye eski biçimde (etiketsiz) parça yazılır, sayfa yenilenir ve yeni
 kelime yine bulunmalıdır.
 
-Toplam **197 kontrol** geçer (arama 19, arayüz 21, telaffuz 9, geçmiş 11,
-uç durumlar 59, tazelik 15, kapsam 63).
+Toplam **204 kontrol** geçer (arama 19, arayüz 21, telaffuz 9, geçmiş 11,
+uç durumlar 66, tazelik 15, kapsam 63).
 
 Tarayıcı testleri `http://127.0.0.1:8777` adresinde sunucu bekler. Playwright
 projenin bağımlılığı değildir (sıfır-build kuralı); kurulu olduğu yeri
@@ -125,6 +151,7 @@ vendor/                  gömülü kütüphaneler (offline ilk açılış CDN'e 
 data/                    üretilmiş sözlük verisi
 tools/                   veri üretimi, testler, doğrulama betikleri
 icons/                   PWA ikonları
+docs/                    README görselleri (ekran görüntüleri)
 ```
 
 ### Kütüphaneler neden gömülü
@@ -145,7 +172,8 @@ Sözlük **iki ayrı kaynaktan** beslenir ve bu ikisi bilinçli olarak ayrı tut
 ### Katman 1 — Wiktionary (omurga)
 
 Kaynak: [Kaikki.org](https://kaikki.org) — Wiktionary'nin ayrıştırılmış hâli.
-Lisans **CC BY-SA 4.0**; uygulamada atıf zorunlu, alt bilgide yer alır.
+Lisans **CC BY-SA 4.0**; uygulamada atıf zorunlu, **Ayarlar → Hakkında**
+bölümünde yer alır.
 
 | | Ham kaynak | Üretilen |
 | --- | --- | --- |

@@ -66,6 +66,31 @@ export function size() {
 }
 
 /**
+ * Rastgele bir madde seçer.
+ *
+ * Neden var: ana ekran boşken "ne arayacağımı bilmiyorum" hâli kalıyordu.
+ * Rastgele kelime, 44 bin maddelik sözlüğü gezinmenin en kısa yolu.
+ *
+ * Filtre: çevirisi olan, 4–12 harf, tek kelime ve **küçük harfle başlayan**.
+ * Filtresiz seçim ekrana "abaciscus" ya da "Inegöl" gibi maddeler düşürüyordu;
+ * büyük harf koşulu özel adları eler.
+ * 50 denemede uygun aday bulunamazsa null döner (çağıran düğmeyi gizler).
+ */
+export function random() {
+  if (!rows.length) return null;
+  for (let i = 0; i < 50; i++) {
+    const r = rows[(Math.random() * rows.length) | 0];
+    if (!r || !r.tr) continue;
+    const w = String(r.w);
+    if (w.length < 4 || w.length > 12) continue;
+    if (!/^\p{L}+$/u.test(w)) continue;
+    if (w[0] !== w[0].toLocaleLowerCase('tr')) continue;   // özel adları ele
+    return w;
+  }
+  return null;
+}
+
+/**
  * Arama yapar.
  * @param {string} q
  * @param {number} [limit]
@@ -126,4 +151,4 @@ export function suggest(q, limit = 3) {
   return out;
 }
 
-export default { build, search, suggest, fold, isReady, reset, size };
+export default { build, search, suggest, fold, isReady, reset, size, random };
