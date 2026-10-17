@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Lumen">
+  <title>Lumen</title>
+  <rect width="512" height="512" fill="#101010"/>
+  <!-- Kelime başlığını andıran geometrik L -->
+  <path d="M168 116h48v196h136v44H168z" fill="#F4F2ED"/>
+  <!-- Vurgu noktası: tek renk, tek işaret -->
+  <circle cx="352" cy="150" r="23" fill="#3E9E70"/>
+</svg>

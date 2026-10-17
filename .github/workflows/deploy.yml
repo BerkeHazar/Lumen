@@ -1,0 +1,117 @@
+# Sözlük verisini üretir ve siteyi GitHub Pages'e yayınlar.
+#
+# Neden bu iş akışı var:
+#   Tam sözlük verisi ~34 MB ve kaynağı 523 MB'lık bir arşiv. Bunu repoda elle
+#   güncel tutmak zahmetli. İş akışı veriyi yayın sırasında Kaikki.org'dan
+#   yeniden üretir, böylece sözlük taze kalır ve repoda şişmez.
+#
+# Güvenlik ağı:
+#   Veri üretimi başarısız olursa (Kaikki.org çökmüş, ağ sorunu, biçim değişmiş)
+#   iş akışı DURMAZ. Repoda duran önceki veri kullanılır ve site yine yayınlanır.
+#   Site hiçbir koşulda boş açılmaz.
+
+name: Yayınla
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Her ayın 1'i, 03:00 UTC — sözlüğü tazele
+    - cron: '0 3 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Aynı anda tek yayın; yeni push öncekini iptal eder
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@v4
+
+      - name: Node kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: İkinci katmanı üret (FreeDict eng-tur, GPL)
+        id: freedict
+        continue-on-error: true
+        run: |
+          echo "FreeDict eng-tur indirilip işleniyor…"
+          node tools/build-freedict.mjs --out data/freedict
+        timeout-minutes: 10
+
+      - name: Veriyi yeniden üret
+        id: dict
+        continue-on-error: true
+        run: |
+          echo "Kaikki.org arşivi indirilip işleniyor…"
+          node tools/build-dict.mjs --dir both --out data
+        timeout-minutes: 30
+
+      - name: Veri bütünlüğünü doğrula
+        id: verify
+        run: |
+          ok=1
+          for f in data/manifest.json data/en-tr/index.json data/tr-en/index.json data/freedict/manifest.json; do
+            if [ ! -s "$f" ]; then echo "eksik: $f"; ok=0; fi
+          done
+          if [ "$ok" = "1" ]; then
+            echo "Veri hazır."
+            node -e "
+              const m = require('./data/manifest.json');
+              const f = require('./data/freedict/manifest.json');
+              console.log('  EN->TR:', m.dirs['en-tr'].count.toLocaleString('tr-TR'), 'kelime');
+              console.log('  TR->EN:', m.dirs['tr-en'].count.toLocaleString('tr-TR'), 'kelime');
+              console.log('  FreeDict (GPL-2.0+):', f.count.toLocaleString('tr-TR'), 'kelime');
+            "
+          else
+            echo "::warning::Sözlük verisi üretilemedi. Repodaki önceki veri kullanılacak."
+          fi
+
+      - name: Lisans dosyaları yerinde mi
+        run: |
+          test -s data/freedict/LICENSE || { echo "::error::FreeDict GPL lisans metni eksik"; exit 1; }
+          test -s data/freedict/README.md || { echo "::error::FreeDict atıf dosyası eksik"; exit 1; }
+          echo "Lisans dosyaları yerinde."
+
+      - name: Arama katmanını test et
+        continue-on-error: true
+        run: node tools/test-search.mjs
+
+      - name: Pages'i hazırla
+        uses: actions/configure-pages@v5
+
+      - name: Siteyi paketle
+        run: |
+          # Yalnızca ÇALIŞMA ZAMANI dosyaları kopyalanır.
+          # Önceden path: . veriliyordu; bu .git dizinini (60 MB) ve tools/
+          # altındaki geliştirme araçlarını da yayın paketine koyuyordu.
+          mkdir -p dist
+          cp -r index.html manifest.webmanifest sw.js css js vendor icons data dist/
+          echo "paket boyutu: $(du -sh dist | cut -f1)"
+
+      - name: Paketi yükle
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Yayınla
+        id: deployment
+        uses: actions/deploy-pages@v4

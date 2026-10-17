@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>Lumen — Türkçe İngilizce sözlük</title>
+<meta name="description" content="İki yönlü Türkçe–İngilizce sözlük. Çevrimdışı çalışır, hesap istemez, veri cihazda kalır.">
+
+<meta name="theme-color" content="#101010">
+<meta name="color-scheme" content="dark light">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lumen">
+
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+
+<!--
+  Yazı tipleri:
+    Instrument Serif  kelime başlığı ve örnek cümleler
+    Instrument Sans   arayüz ve tanımlar
+    STIX Two Text     yalnızca fonetik (IPA)
+
+  IPA için ayrı bir aile kullanılmasının nedeni: Instrument Serif ve Instrument
+  Sans, IPA karakterlerinin yalnızca %15'ini içeriyor (ɪ ɔ ː ɹ ʃ ˈ yok). Bunlar
+  başka bir fonttan tamamlanınca fonetik karışık görünür. STIX Two Text bilimsel
+  yayıncılık için tasarlandı ve IPA kapsaması tam. Doğrulama: tools/check-fonts.py
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Instrument+Serif:ital@0;1&family=STIX+Two+Text:ital,wght@0,400..700;1,400..700&display=swap">
+
+<link rel="stylesheet" href="./css/stage.css">
+
+<script>
+  /* Tema, ilk boyamadan önce uygulanır — karanlık/açık geçişinde titreme olmasın.
+     Ayarlar IndexedDB'de tutulur ve orası senkron okunamaz; bu yüzden son bilinen
+     tema localStorage'a da yazılır (yalnızca bu iş için). */
+  (function () {
+    try {
+      var saved = localStorage.getItem('lumen.theme') || 'auto';
+      var dark = saved === 'dark' ||
+        (saved === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    } catch (e) { /* yok say */ }
+  })();
+</script>
+</head>
+<body>
+
+<div class="app">
+  <!-- Kabuk app.js tarafından çizilir -->
+</div>
+
+<noscript>
+  <div class="app">
+    <div class="notice" style="margin-top:40px">
+      <div class="t">
+        <b>JavaScript kapalı</b>
+        Lumen arama ve sözlük işlemlerini tarayıcıda yapar. Devam etmek için
+        JavaScript'i açman gerekiyor.
+      </div>
+    </div>
+  </div>
+</noscript>
+
+<script>
+/*
+ * Güncelleme denetimi — bilerek app.js'te DEĞİL, burada.
+ *
+ * Kabuk dosyaları (app.js dahil) stale-while-revalidate ile servis ediliyor:
+ * güncellemeden sonraki ilk yüklemede hâlâ eski app.js çalışır. Bu satırlar ise
+ * her gezinmede ağdan gelen index.html ile birlikte gelir, yani her zaman
+ * günceldir. Yeni service worker devreye girdiğinde sayfa bir kez yenilenir;
+ * kullanıcının elle yenilemesi gerekmez.
+ */
+(function () {
+  if (!('serviceWorker' in navigator)) return;
+  var hadController = !!navigator.serviceWorker.controller;
+  var done = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!hadController || done) return;   // ilk kurulumda gereksiz yenileme olmasın
+    done = true;
+    location.reload();
+  });
+})();
+</script>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

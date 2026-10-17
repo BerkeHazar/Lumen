@@ -1,0 +1,46 @@
+# ---------------------------------------------------------------------------
+# Geliştirme kalıntıları
+# ---------------------------------------------------------------------------
+
+# Testlerin ürettiği ekran görüntüleri (5 MB). Yayına girmez, repoda da durmaz.
+.shots/
+
+# Geçici tanı/ölçüm betikleri. Kalıcı araçlar tools/ altında ve _ ile başlamaz.
+tools/_*
+
+# Kişisel notlar — yalnızca bu makinede kalır, repoya girmez.
+# YAYIN.md kendi klasör yolunu, git kimliğini ve yayın adresini içeriyor.
+YAYIN.md
+
+# ---------------------------------------------------------------------------
+# İşletim sistemi / düzenleyici
+# ---------------------------------------------------------------------------
+
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.log
+.idea/
+.vscode/
+
+# ---------------------------------------------------------------------------
+# Bağımlılıklar
+# ---------------------------------------------------------------------------
+
+# Proje sıfır bağımlılık kuralıyla yazıldı (bkz. README). Playwright gibi
+# araçlar projenin bağımlılığı değil; yine de birinin `npm install` demesi
+# hâlinde repoya girmesin.
+node_modules/
+
+# ---------------------------------------------------------------------------
+# DİKKAT: data/ BİLİNÇLİ OLARAK YOK
+# ---------------------------------------------------------------------------
+#
+# data/ 55 MB ve repoda DURUR. Sebep: yayın iş akışı sözlüğü Kaikki.org'dan
+# yeniden üretir, ama üretim başarısız olursa (kaynak çökmüş, ağ sorunu, biçim
+# değişmiş) repodaki bu kopya kullanılır. Yayınlanan site hiçbir koşulda boş
+# açılmaz. Bu güvenlik ağını kaybetmemek için veri sürümlenir.
+#
+# Aynı sebeple data/freedict/LICENSE ve data/freedict/README.md de commit
+# edilir: GPL-2.0+ atıf koşulu ve iş akışı bu dosyalar yoksa yayını durdurur.
