@@ -120,8 +120,22 @@ const EQUALIZER =
 /* ------------------------------------------------- marka işareti (logotype) */
 
 /**
- * Üst çubukta "Lumen" yazısının solunda duran işaret.
+ * Üst çubukta ve giriş ekranında "Lumen" yazısının solunda duran işaret.
  * icons/icon.svg ile aynı geometri, 24'lük ızgaraya uyarlanmış.
+ *
+ * Bricolage Grotesque'e geçince işaret de elden geçti — yapı AYNI (L + nokta),
+ * yalnızca pürüzler giderildi:
+ *
+ *   • Gövde ve ayak kalınlığı eşitlendi (3,1 → 3,2). Eskiden 0,1 fark vardı,
+ *     büyük boyutta gözle görülüyordu.
+ *   • Büyük harf yüksekliği 13,4 → 14,0. Eski yükseklik 24'lük ızgarada
+ *     küsuratlı bir sayı bırakıyordu, harf optik olarak kısa duruyordu.
+ *   • Köşelere 0,55 yarıçap eklendi. Bricolage'ın köşeleri tam sivri değil;
+ *     işaret sivri kalınca yanındaki kelimeyle aynı aileden gelmiyordu.
+ *     (20 pikselde 0,45px — göze "yumuşama" olarak değil, pürüzsüzlük olarak
+ *     görünür.)
+ *   • Nokta büyütüldü (r 2,2 → 2,4) ve büyük harf çizgisine oturtuldu: yuvarlak
+ *     biçimler optik olarak küçük göründüğü için 0,2 birim yukarı taşar.
  *
  * Küçük boyutta okunabilmesi için uygulama ikonundan farklı olarak kollar
  * kalınlaştırıldı; ikon 512'de, bu işaret 20 pikselde görünüyor.
@@ -129,8 +143,8 @@ const EQUALIZER =
 export function logoMark(opt = {}) {
   const { size = 20, cls = '' } = opt;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" class="${cls}" aria-hidden="true" focusable="false">
-    <path d="M6.3 4.3h3.1v10.3h7.9v3.1H6.3z" fill="currentColor"/>
-    <circle cx="17.9" cy="6.1" r="2.2" fill="var(--accent, #3E9E70)"/>
+    <path d="M6.3 4.85Q6.3 4.3 6.85 4.3L8.95 4.3Q9.5 4.3 9.5 4.85L9.5 14.55Q9.5 15.1 10.05 15.1L16.75 15.1Q17.3 15.1 17.3 15.65L17.3 17.75Q17.3 18.3 16.75 18.3L6.85 18.3Q6.3 18.3 6.3 17.75Z" fill="currentColor"/>
+    <circle cx="18.4" cy="6.5" r="2.4" fill="var(--accent, #3E9E70)"/>
   </svg>`;
 }
 

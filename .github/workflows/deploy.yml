@@ -58,6 +58,15 @@ jobs:
           node tools/build-dict.mjs --dir both --out data
         timeout-minutes: 30
 
+      # SIRA ŞART: build-dict.mjs data/ klasörünü silip sıfırdan yazıyor.
+      # tools/batches/ altındaki elle yazılmış maddeler bu adım çalışmazsa
+      # yayında kaybolur — kaynakta karşılığı olmayan kelimeler oldukları için
+      # Kaikki'den geri gelmezler.
+      - name: Elle yazılan maddeleri uygula
+        id: batches
+        continue-on-error: true
+        run: node tools/apply-batches.mjs
+
       - name: Veri bütünlüğünü doğrula
         id: verify
         run: |

@@ -104,8 +104,8 @@ check('ilk sonuç extravagant', /extravagant/i.test(first.first || ''), first.fi
 await page.locator('.result').first().click();
 await wait(1500);
 check('maddede Türkçe karşılık görünüyor',
-  (await page.locator('.wtr .words span').count()) >= 1,
-  `${await page.locator('.wtr .words span').count()} karşılık`);
+  (await page.locator('.wtr-group .trs .tr').count()) >= 1,
+  `${await page.locator('.wtr-group .trs .tr').count()} karşılık`);
 
 const keysAfter = await IDB.keys();
 const tagged = keysAfter.filter((k) => /^d[0-9A-Za-z]+:/.test(String(k)));
@@ -137,7 +137,7 @@ check('eski kayıttaki kelime yine bulunuyor', stale.count >= 1, `${stale.count}
 /* maddeyi açıp gerçek verinin geldiğini doğrula */
 await page.goto(`${BASE}/#/w/elephant`, { waitUntil: 'networkidle' });
 await wait(2200);
-const elephantDef = await page.locator('.sense .d').first().textContent().catch(() => '');
+const elephantDef = await page.locator('.row .c-src .def').first().textContent().catch(() => '');
 check('"elephant" gerçek veriden geliyor',
   !!elephantDef && !/Eski kayıttan/.test(elephantDef), elephantDef.slice(0, 60) || '(tanım yok)');
 
@@ -154,7 +154,7 @@ await wait(2800);
 const taggedWrong = await search('extinct');
 await page.goto(`${BASE}/#/w/extinct`, { waitUntil: 'networkidle' });
 await wait(2000);
-const extinctDef = await page.locator('.sense .d').first().textContent().catch(() => '');
+const extinctDef = await page.locator('.row .c-src .def').first().textContent().catch(() => '');
 check('yanlış etiketli parça yok sayıldı',
   !/Eski nesil/.test(extinctDef || ''), extinctDef.slice(0, 60) || '(tanım yok)');
 

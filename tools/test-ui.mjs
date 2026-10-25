@@ -98,10 +98,10 @@ check('fonetik gösteriliyor', ipaCount === 1);
 const ipa = ipaCount ? await page.locator('.entry-meta .ipa').textContent() : '';
 check('fonetik IPA karakteri içeriyor', /[ɪɔəːˈ]/.test(ipa || ''), ipa || '');
 
-const senseCount = await page.locator('.sense').count();
+const senseCount = await page.locator('.rows .row').count();
 check('anlamlar listelendi', senseCount >= 1, `${senseCount} anlam`);
 
-const trCount = await page.locator('.sense .tr').count();
+const trCount = await page.locator('.row .trs .tr').count();
 check('Türkçe karşılık var', trCount >= 1);
 
 const sayCount = await page.locator('.say').count();

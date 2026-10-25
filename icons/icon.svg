@@ -1,8 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Lumen">
   <title>Lumen</title>
   <rect width="512" height="512" fill="#101010"/>
-  <!-- Kelime başlığını andıran geometrik L -->
-  <path d="M168 116h48v196h136v44H168z" fill="#F4F2ED"/>
-  <!-- Vurgu noktası: tek renk, tek işaret -->
-  <circle cx="352" cy="150" r="23" fill="#3E9E70"/>
+  <!--
+    Kelime başlığını andıran geometrik L + vurgu noktası.
+    Geometri js/icons.js içindeki logoMark() ile BİREBİR aynı: 24'lük ızgara
+    merkezlenip 21 kat büyütülüyor. İki yerde ayrı ayrı çizilseydi zamanla
+    ayrışırlardı (eski sürümde ayrışmışlardı: 512'lik ikonda köşe yarıçapı
+    yoktu, arayüz işaretinde vardı).
+  -->
+  <g transform="translate(256 256) scale(21) translate(-13.55 -11.2)">
+    <path d="M6.3 4.85Q6.3 4.3 6.85 4.3L8.95 4.3Q9.5 4.3 9.5 4.85L9.5 14.55Q9.5 15.1 10.05 15.1L16.75 15.1Q17.3 15.1 17.3 15.65L17.3 17.75Q17.3 18.3 16.75 18.3L6.85 18.3Q6.3 18.3 6.3 17.75Z" fill="#F4F2ED"/>
+    <circle cx="18.4" cy="6.5" r="2.4" fill="#3E9E70"/>
+  </g>
 </svg>

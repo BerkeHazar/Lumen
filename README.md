@@ -26,7 +26,7 @@
 </p>
 
 <p align="center">
-  <sub>44.683 İngilizce · 34.734 Türkçe madde · 55 MB veri · sıfır bağımlılık</sub>
+  <sub>44.763 İngilizce · 34.734 Türkçe madde · 55 MB veri · sıfır bağımlılık</sub>
 </p>
 
 - **Ara → bul → oku → kapat.** Oyunlaştırma yok; streak, XP, seviye, rozet yok.
@@ -83,8 +83,8 @@ kopyada** oluyordu. Bu test kullanıcının durumunu birebir kurar: veri iner,
 IndexedDB'ye eski biçimde (etiketsiz) parça yazılır, sayfa yenilenir ve yeni
 kelime yine bulunmalıdır.
 
-Toplam **204 kontrol** geçer (arama 19, arayüz 21, telaffuz 9, geçmiş 11,
-uç durumlar 66, tazelik 15, kapsam 63).
+Toplam **182 kontrol** geçer (arama 19, arayüz 21, telaffuz 9, geçmiş 11,
+uç durumlar 66, tazelik 15, kapsam 41).
 
 Tarayıcı testleri `http://127.0.0.1:8777` adresinde sunucu bekler. Playwright
 projenin bağımlılığı değildir (sıfır-build kuralı); kurulu olduğu yeri
@@ -177,8 +177,19 @@ bölümünde yer alır.
 
 | | Ham kaynak | Üretilen |
 | --- | --- | --- |
-| İngilizce | 3,34 GB JSONL (523 MB gz) | 44.683 madde |
+| İngilizce | 3,34 GB JSONL (523 MB gz) | 44.763 madde |
 | Türkçe | 437 MB JSONL (33,5 MB gz) | 34.734 madde |
+
+### Katman 1b — kendi ürettiğimiz maddeler
+
+Sözlüğün gerçek sınırı kaynaktır: 1,39 milyon İngilizce kaydın yalnızca 27
+bininde Türkçe karşılık var. Bu boşluk kaynaktan kapanmıyor — kapatmanın tek
+yolu karşılıkları **yazmak**.
+
+`tools/batches/` altındaki JSON dosyaları elle yazılmış maddeleri taşır ve
+`tools/apply-batches.mjs` bunları `data/en-tr/` içine işler. Bu maddeler
+özgün yazımdır (CC0-1.0); Wiktionary türevi veriler CC BY-SA 4.0 olarak kalır.
+Ayrıntı: [`tools/batches/README.md`](tools/batches/README.md).
 
 ### Katman 2 — FreeDict eng-tur (boşluk dolgusu)
 
@@ -202,8 +213,10 @@ Bu yüzden ayrı ve başlıklı bir blok olarak gösterilirler ("Türkçe karş�
 
 Ayrıntı ve atıf: [`data/freedict/README.md`](data/freedict/README.md)
 
-Toplam 57 MB, harfe göre parçalı. Tarayıcı yalnızca aradığın harfin dosyasını
-indirir, IndexedDB'ye yazar, bir daha inmez.
+Toplam 55 MB, harfe göre parçalı. Tarayıcı yalnızca aradığın harfin dosyasını
+indirir, IndexedDB'ye yazar, bir daha inmez. En büyük parça `en-tr/s.json`
+(4,9 MB); arama dizinleri `en-tr` 1,3 MB, `tr-en` 1,2 MB — ilk açılışta bir
+kez iner.
 
 ### Kapsam — ve neden bu kadar küçük
 
@@ -381,14 +394,21 @@ puan veriyor — üçü de burada düzeltildi (`js/speech.js` başındaki nota b
 
 ## Tasarım
 
-Yön: **Stage** — Instrument Serif (başlık), Instrument Sans (arayüz),
-STIX Two Text (yalnızca fonetik).
+Yön: **Stage** — Bricolage Grotesque (başlık ve marka), Instrument Sans
+(arayüz), STIX Two Text (yalnızca fonetik).
+
+Bricolage Grotesque üç eksenli değişken bir aile (opsz 12–96, wdth 75–100,
+wght 200–800). `opsz` ekseni sayesinde 62px'lik marka yazısı ile 13px'lik bir
+etiket aynı aileden geldiği hâlde farklı çizilir; başlıklarda ayrı punto ayarı
+gerekmez. **İtalik ekseni yok** — italic istenen yerlerde tarayıcı eğikleştirme
+uygular ve harfler biçimsizleşir, bu yüzden eski tasarımdaki üç italik kuralı
+kaldırıldı; ayrım ağırlık ve renkle yapılıyor.
 
 - **Radius 0.** Gölge yok; katman ayrımı hairline çizgiyle yapılır.
 - **Tek vurgu rengi:** yeşil `#3E9E70`.
 - **Monospace yok.** Fonetik IPA serif bir aileyle dizilir.
-- Fonetik için ayrı aile kullanılmasının nedeni: Instrument Serif ve
-  Instrument Sans, IPA karakterlerinin yalnızca **%15'ini** içeriyor
+- Fonetik için ayrı aile kullanılmasının nedeni: Bricolage Grotesque ve
+  Instrument Sans, IPA karakterlerinin yalnızca küçük bir bölümünü içeriyor
   (`ɪ ɔ ː ɹ ʃ ˈ` yok). Bir fontu fonetik için seçmeden önce gerçek cmap
   tablosu doğrulanır — `unicode-range` beyanı glif varlığını garanti etmez.
 
@@ -399,6 +419,52 @@ python tools/check-fonts.py "Instrument Sans" "STIX Two Text"
 
 Yeni ikon gerekiyorsa `tools/make-icons.py` ile PWA ikonları aynı geometriden
 yeniden üretilir.
+
+### Giriş ekranı
+
+İlk açılışta sayfa boş: logo + "Lumen" kilidi ve arama çubuğu **dikey ortada**
+durur. Çubuğa dokunulunca (fare, Tab, `/` kısayolu, mobil dokunuş — hepsi
+`focusin` ile yakalanır) blok yukarı süzülür, marka söner, üst çubuktaki küçük
+marka yerini alır. Esc ve logoya basmak da kapatır.
+
+Geçiş `min-height` üzerinden yapılır (100dvh → 0), ayrı bir `translate` ile
+değil: translate kullanıldığında içeriğin gerçek konumu ile animasyonun konumu
+arasında kayma oluşuyordu.
+
+Kapak yalnızca **gerçekten ilk ekranda** görünür — geçmiş araması olan
+kullanıcıya her açılışta kapak göstermek, listeden önce bir tıklama daha
+istemek olurdu. `S.hero` bir kez `false` olduğunda oturum boyunca kapalı kalır.
+
+Kapanış `render()` ile değil sınıf kaldırarak yapılır: yeniden çizim arama
+alanını DOM'dan söküp yeniden kurar, odak ve imleç kaybolur, geçiş kesilir.
+
+### Madde düzeni
+
+Madde ekranı **iki kolon**: solda iki dilli içerik (≈2/3), sağda kelimeye dair
+yan bilgi (≈1/3, 300px). Arama ekranı 720px tek kolonda kalır — orada geniş
+satır gözle takip edilemiyor. Kolon geçişi `.app.wide` sınıfıyla yapılır.
+
+Sol kolonda **iki ayrı panel** var, tek bir birleşik liste değil:
+
+| Panel | İçerik |
+|-------|--------|
+| İngilizce → Türkçe | anlam başına bir satır: tür etiketi + karşılıklar |
+| İngilizce tanımları | anlam başına bir satır: tür etiketi + tanım + örnek |
+
+Bu ayrımın nedeni ölçüm: **144.125 anlamın yalnızca 34.401'inde (%23,9) Türkçe
+karşılık var.** Anlam satırının yanına ikinci bir kolon koymak maddelerin
+%76'sında boş kolon bırakıyor, ekranın yarısı boş görünüyordu. İki panel
+düzeninde karşılığı olmayan anlam yalnızca tanım panelinde görünür; boşluk
+oluşmaz. Anlam eşleşmesi korunur — her satır tek bir anlamın karşılıklarıdır.
+
+Yoğunluk ölçüsü: satır dolgusu 4px, punto 13.5px, satır aralığı 1.45 →
+900px yükseklikte ~20 satır. Eski düzen (20px dolgu, tek kolon) aynı alanda
+3-4 satır gösteriyordu.
+
+Sağ kolon: heceleme, telaffuz, eş/zıt anlamlılar, ilgili terimler, türevler —
+hepsi satır içi ve virgülle ayrılmış. **Etimoloji yan panelde değil**, ızgaranın
+altında tam genişlikte: maddenin en uzun metni olduğu için yan panelde kalınca
+iki kolonun boyu eşitlenmiyordu.
 
 ### Üst çubuk
 

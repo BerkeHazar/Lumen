@@ -20,18 +20,28 @@
 
 <!--
   Yazı tipleri:
-    Instrument Serif  kelime başlığı ve örnek cümleler
-    Instrument Sans   arayüz ve tanımlar
-    STIX Two Text     yalnızca fonetik (IPA)
+    Bricolage Grotesque  kelime başlığı, marka ve örnek cümleler (görsel aile)
+    Instrument Sans      arayüz ve tanımlar
+    STIX Two Text        yalnızca fonetik (IPA)
 
-  IPA için ayrı bir aile kullanılmasının nedeni: Instrument Serif ve Instrument
-  Sans, IPA karakterlerinin yalnızca %15'ini içeriyor (ɪ ɔ ː ɹ ʃ ˈ yok). Bunlar
-  başka bir fonttan tamamlanınca fonetik karışık görünür. STIX Two Text bilimsel
-  yayıncılık için tasarlandı ve IPA kapsaması tam. Doğrulama: tools/check-fonts.py
+  Bricolage Grotesque üç eksenli değişken bir aile: opsz 12–96, wdth 75–100,
+  wght 200–800. `opsz` ekseni sayesinde 40px'lik bir madde başlığı ile 13px'lik
+  bir etiket aynı aileden geldiği hâlde farklı çizilir — bu yüzden başlıklarda
+  ayrı bir punto ayarı gerekmiyor.
+
+  Ailenin İTALİĞİ YOK. Italic istenen yerlerde tarayıcı eğikleştirme (faux
+  italic) uygular ve bu, harfleri biçimsiz gösterir; bu yüzden eski tasarımdaki
+  üç italik kuralı kaldırıldı, ayrım ağırlık ve renkle yapılıyor.
+
+  IPA için ayrı bir aile kullanılmasının nedeni: Bricolage Grotesque ve
+  Instrument Sans, IPA karakterlerinin yalnızca küçük bir bölümünü içeriyor
+  (ɪ ɔ ː ɹ ʃ ˈ yok). Bunlar başka bir fonttan tamamlanınca fonetik karışık
+  görünür. STIX Two Text bilimsel yayıncılık için tasarlandı ve IPA kapsaması
+  tam. Doğrulama: tools/check-fonts.py
 -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400..700&family=Instrument+Serif:ital@0;1&family=STIX+Two+Text:ital,wght@0,400..700;1,400..700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=Instrument+Sans:wght@400..700&family=STIX+Two+Text:ital,wght@0,400..700;1,400..700&display=swap">
 
 <link rel="stylesheet" href="./css/stage.css">
 

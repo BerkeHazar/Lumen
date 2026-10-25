@@ -304,10 +304,10 @@ if (WITH_UI) {
   /* Türkçesi olmayan madde: zenginlik Wiktionary'den, karşılık FreeDict'ten */
   const ext = await open('extravagant');
   check('"extravagant" maddesi açıldı', (ext.title || '').toLowerCase() === 'extravagant', ext.title || '(yok)');
-  const extWtr = await page.$$eval('.wtr .words span', (e) => e.map((x) => x.textContent));
+  const extWtr = await page.$$eval('.wtr-group .trs .tr', (e) => e.map((x) => x.textContent));
   check('"extravagant" Türkçe karşılık gösteriyor', extWtr.length >= 3, extWtr.join(', ') || '(yok)');
   check('karşılıklar FreeDict\'ten geliyor', extWtr.includes('müsrif'), extWtr.join(', '));
-  check('"extravagant" zengin (tanımlar var)', await page.locator('.sense').count() >= 3);
+  check('"extravagant" zengin (tanımlar var)', await page.locator('.rows .row').count() >= 3);
   check('"extravagant" IPA taşıyor', await page.locator('.entry-meta .ipa').count() === 1);
   check('"extravagant" etimoloji taşıyor', await page.locator('.ety').count() === 1);
   check('"extravagant" "tanım yok" demiyor',
@@ -316,9 +316,9 @@ if (WITH_UI) {
 
   /* kendi Türkçesi olan maddeye DOKUNULMAMALI */
   await open('water');
-  check('"water" maddesinde wtr bloğu yok', await page.locator('.wtr').count() === 0);
+  check('"water" maddesinde wtr bloğu yok', await page.locator('.wtr-group').count() === 0);
   check('"water" kendi karşılığını koruyor',
-    (await page.locator('.sense .tr').first().textContent() || '').includes('su'));
+    (await page.locator('.row .trs .tr').first().textContent() || '').includes('su'));
 
   /* düz madde uyarı göstermemeli */
   const plain = await open('water');

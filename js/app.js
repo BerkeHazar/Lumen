@@ -34,7 +34,29 @@ const S = {
   notice: null,
   speaking: null,      // şu an seslendirilen kelime
   sayStage: null,      // 'loading' | 'playing' | 'fallback'
+  hero: true,          // giriş ekranı: logo + isim + çubuk ortada mı
+  counts: null,        // manifest'ten gelen madde sayıları { 'en-tr', 'tr-en' }
 };
+
+/**
+ * Madde sayıları: iki yönün toplamı ve yön bazlı dökümü.
+ *
+ * Manifest okunamadıysa (çevrimdışı ilk açılış) o anki dizinin uzunluğuna
+ * düşer — ekranda sayı hiç kaybolmasın, yalnızca toplam yerine tek yön yazar.
+ */
+function counts() {
+  const c = S.counts;
+  if (c && (c['en-tr'] || c['tr-en'])) {
+    return { total: c['en-tr'] + c['tr-en'], en: c['en-tr'], tr: c['tr-en'], exact: true };
+  }
+  const n = search.size ? search.size() : 0;
+  return {
+    total: n,
+    en: S.direction === 'en-tr' ? n : 0,
+    tr: S.direction === 'tr-en' ? n : 0,
+    exact: false,
+  };
+}
 
 /* ---------------------------------------------------------------- yardımcı */
 
@@ -166,8 +188,9 @@ function viewSearch() {
     </div>`;
   } else if (!q) {
     const recent = S.recent || [];
+    // Dizin uzunluğu: rastgele seçim buradan yapılır, hazır değilse düğme gizlenir.
     const n = search.size ? search.size() : 0;
-    // Dizin hazır değilken rastgele seçim yapılamaz — düğme o zaman gizlenir.
+    const c = counts();
     const randomBtn = n
       ? `<button class="textbtn" data-act="random">Rastgele bir kelime <span aria-hidden="true">→</span></button>`
       : '';
@@ -201,8 +224,11 @@ function viewSearch() {
        * ana ekranın "kelimesi" o.
        */
       body = `<div class="home">
-          ${n ? `<h3 class="home-count">${n.toLocaleString('tr-TR')}</h3>
-                 <p class="home-sub">${esc(dirLabel)} madde · çevrimdışı çalışır</p>` : ''}
+          ${c.total ? `<h3 class="home-count">${c.total.toLocaleString('tr-TR')}</h3>
+                 <p class="home-sub">${[
+                   c.en ? `${c.en.toLocaleString('tr-TR')} EN → TR` : '',
+                   c.tr ? `${c.tr.toLocaleString('tr-TR')} TR → EN` : '',
+                 ].filter(Boolean).join(' · ')} · çevrimdışı çalışır</p>` : ''}
           ${randomBtn ? `<div class="home-random">${randomBtn}</div>` : ''}
         </div>`;
     }
@@ -226,7 +252,7 @@ function viewSearch() {
     </ul>`;
   }
 
-  return `
+  const field = `
     <div class="field">
       ${icon('search', { size: 21 })}
       <input id="q" type="search" autocomplete="off" autocapitalize="off" spellcheck="false"
@@ -236,8 +262,53 @@ function viewSearch() {
       ${q ? `<span class="count">${S.results.length} sonuç</span>` : ''}
       <button class="ibtn" data-act="clear" aria-label="Aramayı temizle"
               style="${q ? '' : 'visibility:hidden'}">${icon('close', { size: 17 })}</button>
-    </div>
-    ${body}`;
+    </div>`;
+
+  /*
+   * GİRİŞ EKRANI (hero)
+   *
+   * İlk açılışta sayfa boş: ortada logo, "Lumen" ve arama çubuğu duruyor.
+   * Çubuğa dokunulunca (ya da Esc) blok yukarı süzülür, logo söner ve üst
+   * çubuktaki küçük marka yerini alır. Amaç ilk ekranı bir "kapak" gibi
+   * kullanmak: sözlükte ilk yapılacak tek şey var, o da aramak.
+   *
+   * Yalnızca GERÇEKTEN ilk ekranda görünür — geçmiş araması olan kullanıcıya
+   * her açılışta kapak göstermek, listeden önce bir tıklama daha istemek olur.
+   */
+  const firstScreen = !q && !S.loading && !(S.recent || []).length;
+
+  /*
+   * Kapak, açık/kapalı diye iki AYRI DOM olarak çizilmiyor: boş arama ekranında
+   * sarmalayıcı her zaman duruyor, durumu `.is-open` sınıfı belirliyor.
+   *
+   * Neden: önceki sürümde kapanış sınıfla (animasyonlu), açılış ise yeniden
+   * çizimle (anında) yapılıyordu. Arama alanından boşluğa basınca ekran bir
+   * karede düz düzene atlıyordu. Tek DOM + tek sınıf olunca iki yön de aynı
+   * geçişi kullanıyor.
+   */
+  if (firstScreen) {
+    const c = counts();
+    const flipLabel = S.direction === 'en-tr' ? 'İngilizce → Türkçe' : 'Türkçe → İngilizce';
+    return `
+      <div class="hero${S.hero ? ' is-open' : ''}" data-hero>
+        <div class="hero-brand" data-act="heroclose"${S.hero ? '' : ' aria-hidden="true"'}>
+          <span class="hero-lockup">
+            <span class="hero-mark">${logoMark({ size: 54 })}</span>
+            <span class="hero-word">Lumen</span>
+          </span>
+          <p class="hero-sub">
+            <button class="hero-dir" data-act="flip" title="Arama yönünü değiştir">
+              ${flipLabel} <span class="hero-dir-swap">⇄</span>
+            </button>
+            ${c.total ? `<span class="hero-sep">·</span><span>${c.total.toLocaleString('tr-TR')} madde</span>` : ''}
+          </p>
+        </div>
+        ${field}
+      </div>
+      <div class="hero-rest">${body}</div>`;
+  }
+
+  return `${field}${body}`;
 }
 
 function viewEntry() {
@@ -258,12 +329,12 @@ function viewEntry() {
     </div>`;
   }
 
-  const lang = S.direction === 'en-tr' ? 'en' : 'tr';
+  const enTr = S.direction === 'en-tr';
   const fav = S.favorites.some((f) => f.w === e.w && f.dir === S.direction);
   const busy = S.speaking === e.w;
 
   /* başlık ve telaffuz */
-  const ipa = (e.ipa || [])[0];
+  const ipas = (e.ipa || []).filter((x) => x && x.v).map((x) => x.v);
   const syl = (e.syl || []).join('·');
   const hasAudio = (e.aud || []).length > 0 || speech.CAN_SPEAK;
 
@@ -272,57 +343,165 @@ function viewEntry() {
             data-state="${busy ? (S.sayStage || 'loading') : 'idle'}"
             aria-label="Telaffuz et">
       ${busy && S.sayStage === 'playing'
-        ? equalizer({ size: 16 })
-        : icon('speaker', { size: 16 })}
+        ? equalizer({ size: 14 })
+        : icon('speaker', { size: 14 })}
       <span>${busy && S.sayStage === 'playing' ? 'Çalıyor' : 'Dinle'}</span>
     </button>` : '';
 
-  const meta = `
-    <div class="entry-meta">
-      ${ipa && ipa.v ? `<span class="ipa">/${esc(ipa.v)}/</span>` : ''}
-      ${syl ? `<span class="syl">${esc(syl)}</span>` : ''}
-      ${sayBtn}
-      <span class="entry-actions">
-        <button class="ibtn" data-act="fav" data-word="${esc(e.w)}"
-                aria-pressed="${fav}" aria-label="${fav ? 'Favoriden çıkar' : 'Favoriye ekle'}">
-          ${icon(fav ? 'bookmarkFilled' : 'bookmark', { size: 18 })}
-        </button>
-      </span>
-    </div>`;
+  /*
+   * MADDE DÜZENİ — referans: yoğun sözlük düzeni.
+   *
+   * Eski düzen tek kolondu (720px) ve anlamlar 20px dolgulu satırlardı; uzun
+   * maddelerde ekran başına 3-4 anlam sığıyordu. Yeni düzen iki kolon:
+   *   sol  (≈2/3) : iki dilli anlam listesi — her satırda kaynak dil | hedef dil
+   *   sağ  (≈1/3) : kelimeye dair yan bilgi (heceleme, telaffuz, eş/zıt, köken)
+   * Anlam satırları 4px dolguya indi; aynı ekrana 12-15 anlam sığıyor.
+   *
+   * Kolon sırası YÖNE GÖRE değişir: kaynak dil her zaman solda durur. Böylece
+   * EN→TR'de İngilizce tanım solda, TR→EN'de Türkçe karşılık solda olur ve
+   * iki yön aynı ritimde okunur.
+   */
+  const srcLang = enTr ? 'İngilizce' : 'Türkçe';
+  const dstLang = enTr ? 'Türkçe' : 'İngilizce';
+  const dirLabel = `${srcLang} → ${dstLang}`;
 
-  /* anlamlar */
-  const senses = (e.s || []).map((s) => {
-    const tr = (s.tr || []).length ? `<span class="tr">${esc(s.tr.join(', '))}.</span> ` : '';
-    // TR -> EN maddelerinde tanım yoktur; İngilizce karşılığın tanımı `en` alanındadır.
-    // Bu tanım, hangi İngilizce kelimenin doğru olduğunu netleştirdiği için gösterilir.
-    const def = s.def || (s.en && s.en[0]) || '';
+  /* ---- Türkçe karşılıklar (tek satırda bir anlam) ---- */
+
+  /*
+   * NEDEN AYRI PANEL: anlamların yalnızca %23,9'unda Türkçe karşılık var
+   * (144.125 anlamın 34.401'i). Anlam satırının yanına ikinci kolon koymak,
+   * maddelerin %76'sında boş bir kolon bırakıyordu — ölçüldü, ekranın yarısı
+   * boş görünüyordu. Referans sözlük de bu yüzden iki panel kullanıyor:
+   * önce karşılıklar, sonra tanımlar. Karşılığı olmayan anlam bu panelde
+   * hiç görünmez, tanım panelinde görünür.
+   *
+   * Anlam eşleşmesi korunur: her satır bir anlamın karşılıklarıdır ve
+   * tür etiketiyle (sıfat/fiil) işaretlenir.
+   */
+  const trRows = [];
+  const seenTr = new Set();
+  let trItemCount = 0;
+
+  for (const s of e.s || []) {
+    const list = (s.tr || []).map((t) => String(t).trim()).filter(Boolean);
+    if (!list.length) continue;
+    const fresh = list.filter((t) => !seenTr.has(t.toLowerCase()));
+    if (!fresh.length) continue;
+    fresh.forEach((t) => seenTr.add(t.toLowerCase()));
+    trItemCount += fresh.length;
+    trRows.push(`
+      <li class="row">
+        <span class="k">${esc(posTr(s.pos))}</span>
+        <span class="trs">${fresh
+          .map((t) => `<span class="tr">${esc(t)}</span>`)
+          .join('<span class="sep">·</span>')}</span>
+      </li>`);
+  }
+
+  /* İkinci kaynak (FreeDict): anlam etiketi yok, ayrı grup olarak eklenir. */
+  const wtrFresh = (e.wtr || [])
+    .map((t) => String(t).trim())
+    .filter((t) => t && !seenTr.has(t.toLowerCase()));
+
+  const trPanel = (trRows.length || wtrFresh.length) ? `
+    <section class="panel">
+      <h2 class="panel-h">
+        <span>${srcLang} <i>→</i> ${dstLang}</span>
+        <em>${trItemCount + wtrFresh.length} karşılık</em>
+      </h2>
+      ${trRows.length ? `<ol class="rows">${trRows.join('')}</ol>` : ''}
+      ${wtrFresh.length ? `
+        <div class="wtr-group">
+          <ol class="rows"><li class="row">
+            <span class="k">2. kaynak</span>
+            <span class="trs">${wtrFresh
+              .map((t) => `<span class="tr">${esc(t)}</span>`)
+              .join('<span class="sep">·</span>')}</span>
+          </li></ol>
+          ${trRows.length ? '<p class="srcnote">FreeDict kaynağından gelir; maddenin bütün anlamlarını kapsamayabilir.</p>' : ''}
+        </div>` : ''}
+    </section>` : '';
+
+  /* ---- tanımlar ---- */
+
+  const defRows = (e.s || []).map((s) => {
+    // EN→TR: tanım `def`. TR→EN: Türkçe tanım yok, İngilizce gloss `en` alanında.
+    const def = enTr ? (s.def || '') : ((s.en || [])[0] || '');
+    if (!def) return '';
     const ex = (s.ex || [])[0];
     return `
-      <li class="sense">
+      <li class="row">
         <span class="k">${esc(posTr(s.pos))}</span>
-        <span class="d">
-          ${def ? esc(def) + ' ' : ''}${tr}
+        <span class="c-src">
+          <span class="def">${esc(def)}</span>
           ${ex ? `<span class="ex">${esc(ex)}</span>` : ''}
         </span>
       </li>`;
-  }).join('');
+  }).filter(Boolean).join('');
 
-  /* ilişkiler */
-  const relBlock = (title, list) => (list && list.length)
-    ? `<div class="rel">
-         <h3>${title}</h3>
-         <div class="words">${list.map((w) => `<button data-open="${esc(w)}">${esc(w)}</button>`).join('')}</div>
-       </div>`
+  const defCount = (e.s || []).filter((s) => (enTr ? s.def : (s.en || [])[0])).length;
+
+  const defPanel = defRows ? `
+    <section class="panel">
+      <h2 class="panel-h">
+        <span>İngilizce tanımları</span>
+        <em>${defCount} anlam</em>
+      </h2>
+      <ol class="rows">${defRows}</ol>
+    </section>` : '';
+
+  /* ---- yan panel parçaları ---- */
+
+  /*
+   * İlişkili kelimeler virgülle ayrılmış satır içi bağlantılar olarak verilir
+   * (referans sözlükteki gibi). Etiketli kutu listesi, "water" gibi türevi bol
+   * maddelerde yan paneli içerikten uzun hâle getiriyordu; satır içi liste
+   * aynı bilgiyi üçte bir yükseklikte taşıyor.
+   *
+   * Madde başının kendisi listeden çıkarılır: kaynakta "book" maddesinin
+   * eş anlamlıları arasında "book" da var, ekranda "Eş anlamlılar: book"
+   * gibi bilgi taşımayan bir satır çıkıyordu.
+   */
+  const head = String(e.w || '').toLocaleLowerCase('tr');
+  const relWords = (list) => (list || [])
+    .filter((w) => w && String(w).toLocaleLowerCase('tr') !== head)
+    .filter((w, i, a) => a.findIndex((x) => String(x).toLocaleLowerCase('tr') === String(w).toLocaleLowerCase('tr')) === i);
+
+  const wlinks = (list) => {
+    const items = relWords(list);
+    return items.length
+      ? items.map((w, i) =>
+          `${i ? '<span class="cm">,</span>' : ''}<button class="wlink" data-open="${esc(w)}">${esc(w)}</button>`
+        ).join('')
+      : '';
+  };
+
+  const sidePanel = (title, body) => body
+    ? `<section class="sp"><h3>${title}</h3><div class="sp-b">${body}</div></section>`
     : '';
 
-  const rels =
-    relBlock('Eş anlamlı', e.syn) +
-    relBlock('Zıt anlamlı', e.ant) +
-    relBlock('İlgili', e.rel) +
-    relBlock('Türev', e.der);
+  const side = [
+    // Tek parçalı heceleme bilgi taşımaz ("water" → "water"); gizlenir.
+    sidePanel('Heceleme', (e.syl || []).length > 1 ? `<span class="mono">${esc(syl)}</span>` : ''),
+    sidePanel('Telaffuz', ipas.length
+      ? `<span class="ipa">${ipas.map((v) => `/${esc(v)}/`).join(' ')}</span>`
+      : ''),
+    sidePanel('Eş anlamlılar', wlinks(e.syn)),
+    sidePanel('Zıt anlamlılar', wlinks(e.ant)),
+    sidePanel('İlgili terimler', wlinks(e.rel)),
+    sidePanel('Türevler', wlinks(e.der)),
+  ].join('');
 
-  const ety = e.ety
-    ? `<div class="ety"><h3>Etimoloji</h3><p>${esc(e.ety)}</p></div>`
+  /*
+   * Etimoloji yan panelden ÇIKARILDI: maddenin en uzun metni ve en az acil
+   * bilgisi. Yan panelde kalınca iki kolonun boyu eşitlenmiyor, sağ taraf
+   * aşağı taşıyordu. Artık ızgaranın altında tam genişlikte duruyor.
+   */
+  const etyBlock = e.ety
+    ? `<section class="ety">
+         <h3>Etimoloji</h3>
+         <p>${esc(e.ety)}</p>
+       </section>`
     : '';
 
   /*
@@ -335,49 +514,37 @@ function viewEntry() {
          <b>${esc(e.lemma)}</b> maddesi gösteriliyor.</p>`
     : '';
 
-  /*
-   * Madde düzeyinde çeviriler.
-   *
-   * Bu çevirilerin kaynağında ANLAM ETİKETİ YOK — hangi tanıma ait oldukları
-   * bilinmiyor. Bu yüzden ilk anlama yığılmazlar (o zaman yanlış tanımın
-   * altında doğru karşılık görünürdü); ayrı ve açıkça etiketli bir blok olarak
-   * verilirler. Blok başlığı, bunların kelime düzeyinde karşılıklar olduğunu
-   * söyler.
-   *
-   * Tanım da varsa ayrıca kaynak notu düşülür: ikinci kaynak (FreeDict) yalnızca
-   * kendi kapsadığı anlamları çevirir. Ölçüm: "articulate" maddesinde yalnızca
-   * fiil/teknik anlamlar var ("mafsal ile birleştirmek"), sıfatın C1 anlamı
-   * ("akıcı, düzgün konuşan") hiç yok. Not olmadan bu, sözlüğün hatası gibi
-   * görünüyordu.
-   */
-  const wordTr = (e.wtr || []).length
-    ? `<div class="rel wtr">
-         <h3>Türkçe karşılıklar</h3>
-         <div class="words">${e.wtr.map((t) => `<span>${esc(t)}</span>`).join('')}</div>
-         ${senses ? '<p class="srcnote">İkinci kaynaktan (FreeDict) gelir; maddenin bütün anlamlarını kapsamayabilir.</p>' : ''}
-       </div>`
-    : '';
-
-  /*
-   * FreeDict'ten gelen maddelerin tanımı yoktur (yalnızca karşılık). O durumda
-   * "tanım yok" satırı gösterilmez — zaten yukarıda karşılıklar var.
-   */
-  const senseList = senses
-    ? `<ul class="senses">${senses}</ul>`
-    : (wordTr ? '' : '<ul class="senses"><li class="sense"><span class="d">Bu madde için tanım yok.</span></li></ul>');
+  const body = trPanel + defPanel
+    || '<p class="none-pad">Bu madde için tanım yok.</p>';
 
   return `
     <div class="entry">
       <div class="entry-head">
-        <h1>${esc(e.w)}</h1>
-        ${meta}
+        <div class="eh-l">
+          <h1>${esc(e.w)}</h1>
+          <div class="entry-meta">
+            <span class="dirchip">${dirLabel}</span>
+            ${ipas.length ? `<span class="ipa">/${esc(ipas[0])}/</span>` : ''}
+            ${syl ? `<span class="syl">${esc(syl)}</span>` : ''}
+            ${sayBtn}
+          </div>
+        </div>
+        <div class="entry-actions">
+          <button class="ibtn" data-act="fav" data-word="${esc(e.w)}"
+                  aria-pressed="${fav}" aria-label="${fav ? 'Favoriden çıkar' : 'Favoriye ekle'}">
+            ${icon(fav ? 'bookmarkFilled' : 'bookmark', { size: 18 })}
+          </button>
+        </div>
       </div>
       ${stemNote}
-      <div class="rule"></div>
-      ${wordTr}
-      ${senseList}
-      ${rels}
-      ${ety}
+
+      <div class="entry-grid">
+        <div class="col-main">${body}</div>
+        <aside class="col-side">${side}</aside>
+      </div>
+
+      ${etyBlock}
+
       <p class="hintbar">
         <span><kbd>Esc</kbd> aramaya dön</span>
         <span><kbd>←</kbd> geri</span>
@@ -602,14 +769,93 @@ function render() {
 
   view.innerHTML = currentView();
 
-  // Odak ve imleç konumunu koru — her tuş vuruşunda alan sıfırlanmasın
-  if (wasInput) {
+  const app = document.querySelector('.app');
+  if (app) {
+    // Madde ekranı iki kolon ister; arama/favoriler/ayarlar tek kolonda kalır.
+    app.classList.toggle('wide', S.route.name === 'entry');
+    /*
+     * Giriş ekranı açıkken üst çubuk tümüyle gizlenir: aynı markayı hem ortada
+     * hem tepede göstermek iki marka yaratıyordu, yalnızca markayı gizlemek ise
+     * sol tarafta boş bir oyuk bırakıyordu. Yön değiştirme düğmesi kapağa
+     * taşındı, diğer denetimler kapatınca geri geliyor.
+     *
+     * Sınıf, hero kapandığında da kaldırılır (collapseHero) — yeniden çizim
+     * gerekmez, geçiş kesilmez.
+     */
+    const heroOn = !!view.querySelector('.hero.is-open');
+    app.classList.toggle('hero-open', heroOn);
+
+    // Kapak tam ekran olsun: üst çubuğun yüksekliği ölçülüp CSS'e veriliyor,
+    // böylece "100dvh - 67px" gibi elle tutulur bir sabit kalmıyor.
+    if (heroOn) {
+      const bar = app.querySelector('.topbar');
+      if (bar) app.style.setProperty('--topbar-h', bar.offsetHeight + 'px');
+    }
+  }
+
+  // Odak ve imleç konumunu koru — her tuş vuruşunda alan sıfırlanmasın.
+  // Kapak açıksa odak geri VERİLMEZ: `focus()` bir `focusin` üretir, o da
+  // kapağı anında kapatır — kapak açılır açılmaz kapanıyordu.
+  if (wasInput && !view.querySelector('.hero.is-open')) {
     const el = document.getElementById(which);
     if (el) {
       el.focus();
       if (caret != null) { try { el.setSelectionRange(caret, caret); } catch { /* yok say */ } }
     }
   }
+}
+
+/*
+ * Kapak, boş arama ekranının hâlidir.
+ *
+ * Ölçüt: arama ekranı, sorgu yok, geçmiş yok, yükleme yok. Kapak bir kez
+ * kapanınca oturum boyunca kapalı kalması yanlıştı — kullanıcı aramayı
+ * temizlediğinde ya da boş alandan çıktığında yine "boş ekran" durumundadır.
+ */
+function heroEligible() {
+  return S.route.name === 'search'
+    && !S.query
+    && !S.loading
+    && !(S.recent || []).length;
+}
+
+/*
+ * Giriş ekranını kapatır — YENİDEN ÇİZMEDEN.
+ *
+ * Neden render() değil: yeniden çizim arama alanını DOM'dan söküp yeniden
+ * kurar, odak ve imleç kaybolur, geçiş animasyonu da kesilir. Burada yalnızca
+ * sınıf kaldırılıyor; CSS geri kalanı hallediyor (blok yukarı süzülür, marka
+ * söner, üst çubuktaki marka belirir, alttaki içerik görünür).
+ */
+function collapseHero() {
+  if (!S.hero) return;
+  S.hero = false;
+
+  const app = document.querySelector('.app');
+  if (app) app.classList.remove('hero-open');
+
+  const el = document.querySelector('.hero.is-open');
+  if (!el) return;
+  el.classList.remove('is-open');
+
+  // Marka DOM'dan SİLİNMEZ, yalnızca gizlenir: geri açılışta aynı düğüm
+  // kullanılıyor, yoksa geri açılış animasyonsuz oluyordu. Ekran okuyucu
+  // kapalı başlığı okumasın diye aria-hidden veriliyor.
+  el.querySelector('.hero-brand')?.setAttribute('aria-hidden', 'true');
+}
+
+/** Kapağı geri açar — kapanışla aynı geçişi kullanır (sınıf değişimi). */
+function expandHero() {
+  S.hero = true;
+
+  const el = document.querySelector('.hero');
+  if (!el) { render(); return; }
+
+  const app = document.querySelector('.app');
+  if (app) app.classList.add('hero-open');
+
+  el.classList.add('is-open');
+  el.querySelector('.hero-brand')?.removeAttribute('aria-hidden');
 }
 
 /** Yalnızca üst çubuğu yeniden çizer (tema/yön değişiminde). */
@@ -715,7 +961,19 @@ async function route() {
 
   if (S.route.name === 'search') {
     const q = document.getElementById('q');
-    if (q && !matchMedia('(pointer: coarse)').matches) q.focus();
+    /*
+     * Giriş ekranı açıkken ODAKLANILMAZ.
+     *
+     * Otomatik odak `focusin` üretir, `focusin` de kapağı kapatır: kapak
+     * açılır açılmaz kapanıyordu (ilk denemede tam olarak bu oldu). Ayrıca
+     * mobilde klavyeyi hemen açar.
+     *
+     * Ölçüt `S.hero` DEĞİL, DOM: geçmiş araması olan kullanıcıda kapak hiç
+     * çizilmez ama `S.hero` hâlâ true olur — o durumda odaklanmayı atlamak
+     * hatalıydı (silme sonrası odak arama alanına dönmüyordu).
+     */
+    const heroShown = !!document.querySelector('.hero.is-open');
+    if (q && !heroShown && !matchMedia('(pointer: coarse)').matches) q.focus();
   }
 }
 
@@ -980,8 +1238,25 @@ async function onClick(ev) {
     case 'clear': {
       S.query = '';
       S.results = [];
+      /*
+       * Temizleme, "boş ekran"a dönüştür. Önceki sürümde kapak bir kez
+       * kapandıktan sonra oturum boyunca bir daha açılmıyordu; aramayı
+       * temizleyen kullanıcı yine boş ekranda kalıyordu ama kapak yoktu.
+       * Alan yeniden odaklanmıyor: odaklanınca `focusin` kapağı hemen
+       * kapatıyor, yani açılıp kapanan bir sıçrama görünüyordu.
+       */
+      /*
+       * Buradan gelindiğinde ekranda kapak sarmalayıcısı YOK (sonuç listesi
+       * çiziliydi). O yüzden önce kapalı hâliyle çizilip bir sonraki karede
+       * açılıyor: aksi hâlde kapak aniden beliriyordu. Çift rAF, tarayıcının
+       * kapalı hâli boyayıp geçişi başlatabilmesi için gerekli.
+       */
+      const reopen = heroEligible();
+      S.hero = !reopen;
       render();
-      document.getElementById('q')?.focus();
+      if (reopen) {
+        requestAnimationFrame(() => requestAnimationFrame(() => expandHero()));
+      }
       break;
     }
 
@@ -1004,6 +1279,11 @@ async function onClick(ev) {
       setDirection(S.direction === 'en-tr' ? 'tr-en' : 'en-tr');
       break;
     }
+
+    /* giriş ekranını kapat — logoya/isme basınca da kapanır */
+    case 'heroclose':
+      collapseHero();
+      break;
 
     case 'theme': {
       const order = ['auto', 'light', 'dark'];
@@ -1103,6 +1383,8 @@ function onKey(ev) {
   }
 
   if (ev.key === 'Escape') {
+    // Giriş ekranı açıksa Esc onu kapatır — aramadan çıkmaz.
+    if (document.querySelector('.hero.is-open')) { collapseHero(); return; }
     if (typing && ev.target.value) {
       ev.target.value = '';
       ev.target.dispatchEvent(new Event('input', { bubbles: true }));
@@ -1165,8 +1447,61 @@ async function boot() {
 
   app.addEventListener('click', on);
   app.addEventListener('input', onInput);
+
+  /*
+   * Giriş ekranı, arama alanına dokunulduğu anda kapanır. `focusin` seçildi
+   * çünkü `focus` kabarmaz (bubble) — tek bir dinleyiciyle hem fare hem
+   * klavye (Tab, "/" kısayolu) hem mobil dokunuş yakalanıyor.
+   */
+  app.addEventListener('focusin', (ev) => {
+    if (ev.target && ev.target.id === 'q') collapseHero();
+  });
+
+  /*
+   * Boş alandan çıkınca kapak geri gelir.
+   *
+   * Kapak "boş ekran"ın hâli; alan boşken oradan ayrılmak yine o hâle
+   * dönmek demek. Yazarken değil — silip boş bırakmak (Backspace/Esc) alanı
+   * odakta tutar ve o anda kapak açmak, kullanıcı yazmayı sürdürecekken
+   * ekranı ayağının altından kaydırmak olurdu.
+   */
+  app.addEventListener('focusout', (ev) => {
+    if (!ev.target || ev.target.id !== 'q') return;
+
+    /*
+     * `relatedTarget` doluysa odak uygulama İÇİNDEKİ başka bir denetime geçti
+     * — kullanıcı bir düğmeye basıyor demektir. O anda yeniden çizmemek şart:
+     * render() tüm görünümü değiştirdiği için düğme `mousedown` ile `mouseup`
+     * arasında DOM'dan düşüyor ve tıklama hiç gerçekleşmiyordu (ölçüldü:
+     * ana ekrandaki "Rastgele bir kelime" düğmesi sessizce ölüydü).
+     *
+     * Odak hiçbir yere gitmiyorsa (boş alana tıklama, sekmeyle çıkma) kapak
+     * geri gelir.
+     */
+    if (ev.relatedTarget) return;
+
+    // Yeniden çizim yok: sarmalayıcı zaten yerinde, sınıfı geri veriyoruz.
+    // Böylece kapanışla aynı geçiş (yukarı süzülme + marka belirme) çalışır.
+    if (heroEligible()) expandHero();
+  });
+
   document.addEventListener('keydown', onKey);
   window.addEventListener('hashchange', () => { route(); });
+
+  /*
+   * Madde sayıları manifest'ten okunur, arama dizininden değil.
+   *
+   * `search.size()` yalnızca O ANKİ yönün dizinini sayıyor; ana ekranda
+   * "44.683 madde" yazıyordu, oysa sözlükte iki yön birlikte 105.750 madde var.
+   * Manifest iki yönü birden taşıyor ve dizin indirilmeden de okunabiliyor.
+   */
+  try {
+    const m = await dict.loadManifest();
+    S.counts = {
+      'en-tr': m?.dirs?.['en-tr']?.count || 0,
+      'tr-en': m?.dirs?.['tr-en']?.count || 0,
+    };
+  } catch { /* manifest yoksa sayı dizinden türetilir */ }
 
   // Dizin arka planda hazırlansın — ilk aramada bekleme olmasın
   warmIndex();
